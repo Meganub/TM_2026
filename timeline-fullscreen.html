@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YOUR TIMELINE TITLE</title>
+<style>
+  /* ============ THEME ============ */
+  :root {
+    --bg: #eef1f4; --card: #ffffff; --ink: #17212b; --muted: #5d6b79; --line: #c3ccd5;
+    --accent: #1f5eff;
+    --c1: #1f5eff; --c2: #d6336c; --c3: #0b8f6a; --c4: #c27a00; --c5: #7a3fd1; --c6: #0a8aa6; /* category colors, assigned in order */
+    --radius: 10px;
+    --font: "Helvetica Neue", Arial, system-ui, sans-serif;
+    --slide: .8s cubic-bezier(.65, 0, .2, 1);   /* speed of the intro <-> timeline slide */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12171d; --card: #1b232c; --ink: #e8edf2; --muted: #94a3b2; --line: #33404d;
+      --accent: #6b94ff; --c1: #6b94ff; --c2: #f06b9b; --c3: #3ccf9f; --c4: #e3a63a; --c5: #a98af0; --c6: #4cc6df;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.55; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ============ TWO FULLSCREEN PANELS ============ */
+  .viewport { position: fixed; inset: 0; overflow: hidden; }
+  .slider { height: 200%; transition: transform var(--slide); }
+  .is-timeline .slider { transform: translateY(-50%); }
+  .panel { height: 50%; position: relative; }
+
+  /* ============ INTRO (PRELUDE) ============ */
+  .intro-panel { display: grid; place-items: center; padding: 40px 24px 120px; overflow-y: auto; }
+  .intro { max-width: 680px; }
+  .eyebrow { margin: 0 0 14px; font-size: .85rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .intro h1 { margin: 0 0 18px; font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -0.03em; }
+  .lead { margin: 0 0 18px; font-size: 1.25rem; color: var(--ink); }
+  .intro p { margin: 0 0 14px; color: var(--muted); max-width: 62ch; }
+
+  /* ============ HOVER ZONES ============ */
+  .zone {
+    position: fixed; left: 0; right: 0; z-index: 20; border: 0; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-size: .9rem; letter-spacing: .04em; color: var(--muted);
+    opacity: 0; pointer-events: none; transition: opacity .4s ease;
+  }
+  .zone-bottom { bottom: 0; height: 96px; background: linear-gradient(to top, color-mix(in srgb, var(--accent) 16%, transparent), transparent); }
+  .zone-top    { top: 0;    height: 60px; background: linear-gradient(var(--bg) 55%, transparent); }
+  .zone:hover { color: var(--accent); }
+  .viewport:not(.is-timeline) ~ .zone-bottom, body:not(.is-timeline) .zone-bottom { opacity: 1; pointer-events: auto; }
+  body.is-timeline .zone-top { opacity: 1; pointer-events: auto; }
+  .arrow { font-size: 1.3rem; line-height: 1; animation: nudge 1.8s ease-in-out infinite; }
+  .zone-top .arrow { animation-name: nudge-up; }
+  @keyframes nudge    { 50% { transform: translateY(5px); } }
+  @keyframes nudge-up { 50% { transform: translateY(-5px); } }
+
+  /* ============ TIMELINE PANEL ============ */
+  .timeline-panel { overflow-y: auto; padding: 76px 20px 90px; }
+  .timeline-wrap { min-width: 0; }
+  .timeline-wrap h2 { margin: 0 0 18px; font-size: 1.8rem; letter-spacing: -0.02em; }
+
+
+  /* sort mode toggle */
+  .sortbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .sortbar-label { font-size: .85rem; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--card); }
+  .mode-btn { cursor: pointer; padding: 6px 16px; border: 0; background: transparent; font-size: .9rem; }
+  .mode-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .filter-btn { cursor: pointer; font-size: .9rem; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); }
+  .filter-btn:hover { border-color: var(--accent); }
+  .filter-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .filter-btn .count { margin-left: 6px; opacity: .65; font-size: .8em; }
+  .active-tag { min-height: 1.6em; margin-bottom: 18px; font-size: .9rem; color: var(--muted); cursor: pointer; }
+
+  /* spine + entries */
+  .timeline { position: relative; padding-left: 34px; }
+  .timeline::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+  .entry { position: relative; margin-bottom: 18px; --c: var(--accent); }
+  .entry::before { content: ""; position: absolute; left: -34px; top: 18px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 4px solid var(--c); }
+  .entry.is-hidden { display: none; }
+  .entry-card { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: var(--radius); padding: 16px 18px; }
+  .entry-meta { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; font-size: .85rem; }
+  .entry-date { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cat-label { cursor: pointer; padding: 0; border: 0; background: none; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+  .cat-label:hover { text-decoration: underline; }
+  .entry-toggle {
+    display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px;
+    margin: 2px 0 0; padding: 0; text-align: left; cursor: pointer;
+    font-size: 1.2rem; font-weight: 700; background: none; border: 0;
+  }
+  .entry-toggle::after { content: ""; flex: none; width: 9px; height: 9px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform .2s; }
+  .entry.is-open .entry-toggle::after { transform: rotate(-135deg); }
+  .entry-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px; }
+  .tag { cursor: pointer; font-size: .78rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); }
+  .tag:hover, .tag.is-selected { border-color: var(--accent); color: var(--accent); }
+  .tag.is-selected { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .entry-summary { margin: 0; }
+  .entry-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+  .entry-body > div { overflow: hidden; }
+  .entry.is-open .entry-body { grid-template-rows: 1fr; }
+  .entry-text { padding-top: 14px; }
+  .entry-text p { margin: 0 0 14px; max-width: 62ch; }
+  .entry-text p:last-child { margin-bottom: 0; }
+
+  /* ============ STAGE: image gallery on the left, timeline slides over to make room ============ */
+  .stage {
+    --gallery-w: clamp(260px, 28vw, 380px);          /* width of the image area */
+    display: grid; grid-template-columns: 0px minmax(0, 760px); column-gap: 0px; justify-content: center;
+    transition: grid-template-columns .7s cubic-bezier(.65, 0, .2, 1), column-gap .7s cubic-bezier(.65, 0, .2, 1);
+  }
+  .stage.has-gallery { grid-template-columns: var(--gallery-w) minmax(0, 760px); column-gap: 36px; }
+  .gallery { min-width: 0; position: sticky; top: 76px; align-self: start; max-height: calc(100dvh - 110px); overflow-x: hidden; overflow-y: auto; }
+  .gallery-inner { padding: 20px 24px 32px; }
+  .entry { scroll-margin-top: 84px; }
+
+  /* photo cards (rotation, offset and width come from the data-* attributes) */
+  .photo {
+    position: relative; margin: 0 0 22px; width: var(--w, 100%); max-width: 100%;
+    padding: 10px 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 4px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+    transform: translate(var(--x, 0px), var(--y, 0px)) rotate(var(--rot, 0deg));
+    transition: transform .25s ease, box-shadow .25s ease;
+    animation: drop-in .6s cubic-bezier(.2, .7, .2, 1) backwards; animation-delay: calc(var(--i, 0) * 110ms);
+  }
+  .photo:hover { transform: translate(var(--x, 0px), var(--y, 0px)) rotate(0deg) scale(1.03); z-index: 2; box-shadow: 0 14px 30px rgba(0, 0, 0, .26); }
+  .photo img { display: block; width: 100%; height: auto; max-height: 300px; object-fit: contain; background: var(--bg); }
+  .fig-source { display: block; margin-top: 8px; font-size: .68rem; line-height: 1.35; color: var(--muted); }   /* very small: source citation */
+  .fig-note   { display: block; margin-top: 4px; font-size: .88rem; line-height: 1.45; color: var(--ink); }      /* a bit bigger: explanation */
+  @keyframes drop-in { from { opacity: 0; transform: translate(-36px, 10px) rotate(calc(var(--rot, 0deg) - 8deg)); } }
+
+  /* the copies of the photos that live inside each entry: hidden on wide screens, shown inline on narrow ones */
+  .entry-media { display: none; }
+  @media (max-width: 960px) {
+    .stage, .stage.has-gallery { grid-template-columns: minmax(0, 760px); column-gap: 0; }
+    .gallery { display: none; }
+    .entry-media { display: flex; flex-wrap: wrap; gap: 18px; padding-top: 18px; }
+    .photo { margin: 0; }
+  }
+  .empty { display: none; color: var(--muted); padding: 20px 0; }
+  .empty.is-visible { display: block; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slider, .stage, .photo, .entry-body, .entry-toggle::after, .zone { transition: none; }
+    .arrow, .photo { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="viewport" id="viewport">
+  <div class="slider">
+
+    <!-- =============== PANEL 1: INTRO / PRELUDE (fill this in) =============== -->
+    <section class="panel intro-panel" id="introPanel">
+      <div class="intro">
+        <p class="eyebrow">EYEBROW (e.g. an essay series or date)</p>
+        <h1>YOUR TITLE GOES HERE</h1>
+        <p class="lead">One or two sentences that frame everything: what this is and why it matters.</p>
+        <p>PRELUDE paragraph one. Set the scene, give context, state your argument.</p>
+        <p>PRELUDE paragraph two. Add as many paragraphs as you like; this panel scrolls if it gets long.</p>
+      </div>
+    </section>
+
+    <!-- =============== PANEL 2: TIMELINE (write your entries here) =============== -->
+    <section class="panel timeline-panel" id="timelinePanel" inert>
+      <div class="stage" id="stage">
+      <aside class="gallery" id="gallery" aria-label="Images for the open entry"><div class="gallery-inner"></div></aside>
+      <div class="timeline-wrap">
+        <h2>YOUR TIMELINE TITLE</h2>
+
+        <div class="sortbar">
+          <span class="sortbar-label">Sort by</span>
+          <div class="seg" role="group" aria-label="Sort mode">
+            <button class="mode-btn" data-mode="category" aria-pressed="true" type="button">Category</button>
+            <button class="mode-btn" data-mode="tag" aria-pressed="false" type="button">Tag</button>
+          </div>
+        </div>
+
+        <div class="filters" role="group" aria-label="Filters"></div>
+        <div class="active-tag" aria-live="polite"></div>
+        <div class="timeline">
+
+        <!-- ================= HOW TO ADD AN ENTRY =================
+             Copy one whole <div class="entry"> ... </div> block and paste it where you want it (top = earliest).
+             - data-category : the category name. Filter buttons, colors and the category label are built from it
+                               automatically, so a brand-new name just works. Spell it identically across entries.
+             - entry-date    : any text (1969, Mar 2024, Spring)
+             - entry-toggle  : the clickable title
+             - tag buttons   : one <button class="tag"> per tag; the text inside is the tag.
+                               Spell tags identically everywhere; the Tag filter is built from them.
+             - entry-summary : always visible
+             - entry-text    : the long text that opens on click; add as many <p> as you like
+
+             - entry-media   : OPTIONAL. When the entry opens, the timeline slides over and these photos appear
+                               on the left. Delete the whole entry-media block for an entry with no images
+                               (the timeline then stays centered). Add one <figure class="photo"> per image.
+               Per-photo settings, all optional, as data-* attributes on the <figure>:
+                 data-rot="-4"   rotation in degrees (negative = counter-clockwise). Default: alternates -3, 2.5, -1.5, 3.5
+                 data-x="12"     nudge right (px, negative = left)
+                 data-y="-10"    nudge down  (px, negative = up)
+                 data-w="240"    width in px (default: full width of the image area)
+               Inside each figure:
+                 img src  -> path or URL of the image (alt = description for screen readers)
+                 fig-source -> tiny source citation, shown first
+                 fig-note   -> slightly larger explanation, under the source
+             Image area width: change --gallery-w in the .stage CSS rule.
+             On screens narrower than 960px the photos appear inside the open entry instead.
+             ======================================================== -->
+
+        <div class="entry" data-category="History">
+          <div class="entry-card">
+            <div class="entry-meta"><span class="entry-date">1969</span></div>
+            <button class="entry-toggle" type="button" aria-expanded="false">Example entry one</button>
+            <div class="entry-tags">
+              <button class="tag" type="button">moon</button>
+              <button class="tag" type="button">nasa</button>
+              <button class="tag" type="button">firsts</button>
+            </div>
+            <p class="entry-summary">Short summary shown on the card at all times.</p>
+            <div class="entry-body">
+              <div>
+                <div class="entry-text">
+                  <p>First paragraph of the long text.</p>
+                  <p>Second paragraph.</p>
+                </div>
+                <div class="entry-media">
+                  <figure class="photo" data-rot="-4">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 260'%3E%3Crect width='400' height='260' fill='%23c3ccd5'/%3E%3Ctext x='200' y='136' text-anchor='middle' font-family='Arial' font-size='20' fill='%235d6b79'%3EYOUR IMAGE%3C/text%3E%3C/svg%3E" alt="Describe the image">
+                    <figcaption>
+                      <span class="fig-source">Source: Author, Title, Publisher, Year (URL)</span>
+                      <span class="fig-note">Explanation of what the viewer is looking at and why it matters.</span>
+                    </figcaption>
+                  </figure>
+                  <figure class="photo" data-rot="3" data-x="22" data-w="220">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 380'%3E%3Crect width='300' height='380' fill='%23c3ccd5'/%3E%3Ctext x='150' y='196' text-anchor='middle' font-family='Arial' font-size='20' fill='%235d6b79'%3EYOUR IMAGE%3C/text%3E%3C/svg%3E" alt="Describe the image">
+                    <figcaption>
+                      <span class="fig-source">Source: Archive name, item no. 123</span>
+                      <span class="fig-note">A second image with its own rotation, offset and width.</span>
+                    </figcaption>
+                  </figure>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="entry" data-category="Science">
+          <div class="entry-card">
+            <div class="entry-meta"><span class="entry-date">1977</span></div>
+            <button class="entry-toggle" type="button" aria-expanded="false">Example entry two</button>
+            <div class="entry-tags">
+              <button class="tag" type="button">voyager</button>
+              <button class="tag" type="button">space</button>
+              <button class="tag" type="button">firsts</button>
+            </div>
+            <p class="entry-summary">Another short summary.</p>
+            <div class="entry-body">
+              <div>
+                <div class="entry-text">
+                  <p>Long text for entry two.</p>
+                </div>
+                <div class="entry-media">
+                  <figure class="photo" data-rot="2">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 260'%3E%3Crect width='400' height='260' fill='%23c3ccd5'/%3E%3Ctext x='200' y='136' text-anchor='middle' font-family='Arial' font-size='20' fill='%235d6b79'%3EYOUR IMAGE%3C/text%3E%3C/svg%3E" alt="Describe the image">
+                    <figcaption>
+                      <span class="fig-source">Source: Author, Title, Publisher, Year</span>
+                      <span class="fig-note">Explanation of the image.</span>
+                    </figcaption>
+                  </figure>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="entry" data-category="History">
+          <div class="entry-card">
+            <div class="entry-meta"><span class="entry-date">1990</span></div>
+            <button class="entry-toggle" type="button" aria-expanded="false">Example entry three (no image)</button>
+            <div class="entry-tags">
+              <button class="tag" type="button">space</button>
+              <button class="tag" type="button">telescope</button>
+            </div>
+            <p class="entry-summary">No entry-media block here, so the timeline stays centered.</p>
+            <div class="entry-body">
+              <div>
+                <div class="entry-text">
+                  <p>Long text for entry three.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+        <p class="empty">No entries match this filter.</p>
+      </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- hover (or tap / Enter) zones: bottom opens the timeline, top returns to the intro -->
+<button class="zone zone-bottom" id="zoneBottom" type="button"><span>Hover here to open the timeline</span><span class="arrow" aria-hidden="true">&#8595;</span></button>
+<button class="zone zone-top" id="zoneTop" type="button" inert><span class="arrow" aria-hidden="true">&#8593;</span><span>Hover here to return to the intro</span></button>
+
+<script>
+  const HOVER_DELAY = 250;     // ms the pointer must rest on a zone before it triggers
+  const COOLDOWN = 900;        // ms before another switch is allowed
+
+  const $ = s => document.querySelector(s);
+  const slug = s => s.trim().toLowerCase().replace(/\s+/g, '-');
+
+  /* ================= intro <-> timeline switching ================= */
+  const zoneBottom = $('#zoneBottom'), zoneTop = $('#zoneTop'), timelinePanel = $('#timelinePanel'), introPanel = $('#introPanel');
+  let busy = false;
+  function show(view) {
+    if (busy) return; busy = true; setTimeout(() => busy = false, COOLDOWN);
+    const tl = view === 'timeline';
+    document.body.classList.toggle('is-timeline', tl);
+    $('#viewport').classList.toggle('is-timeline', tl);
+    timelinePanel.inert = !tl; introPanel.inert = tl;
+    zoneBottom.inert = tl;     zoneTop.inert = !tl;
+  }
+  [[zoneBottom, 'timeline'], [zoneTop, 'intro']].forEach(([z, view]) => {
+    let t;
+    z.addEventListener('mouseenter', () => { t = setTimeout(() => show(view), HOVER_DELAY); });
+    z.addEventListener('mouseleave', () => clearTimeout(t));
+    z.addEventListener('click', () => { clearTimeout(t); show(view); });   // tap, click or Enter
+  });
+
+  /* ================= timeline: built from the entries already in the HTML ================= */
+  const filtersEl = $('.filters'), tagBox = $('.active-tag'), tl = $('.timeline'), emptyMsg = $('.empty');
+  const entries = [...tl.querySelectorAll('.entry')];
+  let mode = 'category';          // 'category' | 'tag'
+  let selected = null;            // selected category name, or tag slug
+
+  // read each entry's data
+  const items = entries.map(node => {
+    const tagEls = [...node.querySelectorAll('.tag')];
+    tagEls.forEach(t => { if (!t.dataset.tag) t.dataset.tag = slug(t.textContent); });
+    return { node, category: (node.dataset.category || '').trim(), tags: tagEls.map(t => ({ slug: t.dataset.tag, label: t.textContent.trim() })) };
+  });
+  const cats = [...new Set(items.map(i => i.category).filter(Boolean))];
+  const tagLabels = new Map();
+  items.forEach(i => i.tags.forEach(t => { if (!tagLabels.has(t.slug)) tagLabels.set(t.slug, t.label); }));
+
+  // category colors + category label on every card
+  items.forEach(({ node, category }) => {
+    const ci = cats.indexOf(category);
+    if (ci >= 0) node.style.setProperty('--c', 'var(--c' + ((ci % 6) + 1) + ')');
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'cat-label'; btn.dataset.category = category; btn.textContent = category;
+    node.querySelector('.entry-meta').append(btn);
+  });
+
+  /* ---- photos: apply rotation / offset / width, and show the open entry's photos in the left gallery ---- */
+  const ROTS = [-3, 2.5, -1.5, 3.5];
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  tl.querySelectorAll('.entry-media').forEach(m => [...m.querySelectorAll('.photo')].forEach((p, i) => {
+    const d = p.dataset;
+    p.style.setProperty('--rot', (d.rot !== undefined ? d.rot : ROTS[i % ROTS.length]) + 'deg');
+    p.style.setProperty('--x', (d.x || 0) + 'px');
+    p.style.setProperty('--y', (d.y || 0) + 'px');
+    if (d.w) p.style.setProperty('--w', d.w + 'px');
+  }));
+  const stage = $('#stage'), galleryInner = $('#gallery .gallery-inner');
+  let clearTimer;
+  function syncGallery() {
+    clearTimeout(clearTimer);
+    const open = tl.querySelector('.entry.is-open');
+    const photos = open ? [...open.querySelectorAll('.entry-media .photo')] : [];
+    stage.classList.toggle('has-gallery', photos.length > 0);
+    if (photos.length) {
+      galleryInner.replaceChildren(...photos.map((p, i) => { const c = p.cloneNode(true); c.style.setProperty('--i', i); return c; }));
+    } else {                       // let the column slide shut before emptying it
+      clearTimer = setTimeout(() => { if (!tl.querySelector('.entry.is-open')) galleryInner.replaceChildren(); }, 750);
+    }
+  }
+  function setOpen(node, open) {
+    node.classList.toggle('is-open', open);
+    node.querySelector('.entry-toggle').setAttribute('aria-expanded', open);
+  }
+  function toggleEntry(node) {
+    const willOpen = !node.classList.contains('is-open');
+    items.forEach(i => { if (i.node !== node) setOpen(i.node, false); });   // one open entry at a time
+    setOpen(node, willOpen);
+    syncGallery();
+    if (willOpen) setTimeout(() => node.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' }), 350);
+  }
+
+  const matches = i => !selected || (mode === 'category' ? i.category === selected : i.tags.some(t => t.slug === selected));
+
+  function renderFilters() {
+    filtersEl.replaceChildren();
+    const add = (value, label, n) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'filter-btn'; b.dataset.value = value; b.textContent = label;
+      if (n != null) { const c = document.createElement('span'); c.className = 'count'; c.textContent = n; b.append(c); }
+      filtersEl.append(b);
+    };
+    add('', 'All');
+    if (mode === 'category') cats.forEach(c => add(c, c, items.filter(i => i.category === c).length));
+    else tagLabels.forEach((label, s) => add(s, label, items.filter(i => i.tags.some(t => t.slug === s)).length));
+  }
+
+  function applyFilters() {
+    let shown = 0;
+    items.forEach(i => { const ok = matches(i); i.node.classList.toggle('is-hidden', !ok); if (ok) shown++; });
+    filtersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('is-active', (b.dataset.value || null) === selected));
+    tl.querySelectorAll('.tag').forEach(t => t.classList.toggle('is-selected', mode === 'tag' && t.dataset.tag === selected));
+    document.querySelectorAll('.mode-btn').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+    const label = mode === 'category' ? selected : tagLabels.get(selected);
+    tagBox.textContent = selected ? `Showing ${shown} of ${items.length} entries (${mode}: ${label}). Click to clear.` : '';
+    emptyMsg.classList.toggle('is-visible', shown === 0);
+    const o = tl.querySelector('.entry.is-open');
+    if (o && o.classList.contains('is-hidden')) { setOpen(o, false); syncGallery(); }   // a filtered-out entry can't stay open
+  }
+
+  function setMode(m, value = null) { mode = m; selected = value; renderFilters(); applyFilters(); }
+
+  document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  filtersEl.addEventListener('click', e => {
+    const b = e.target.closest('.filter-btn'); if (!b) return;
+    selected = b.dataset.value || null; applyFilters();
+  });
+  tl.addEventListener('click', e => {
+    const t = e.target.closest('.tag');
+    if (t) { (mode === 'tag' && selected === t.dataset.tag) ? setMode('tag') : setMode('tag', t.dataset.tag); return; }   // a tag click jumps to tag mode
+    const c = e.target.closest('.cat-label');
+    if (c) { (mode === 'category' && selected === c.dataset.category) ? setMode('category') : setMode('category', c.dataset.category); return; }
+    const h = e.target.closest('.entry-toggle');
+    if (h) toggleEntry(h.closest('.entry'));
+  });
+  tagBox.addEventListener('click', () => { selected = null; applyFilters(); });
+
+  setMode('category');
+</script>
+</body>
+</html>
