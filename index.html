@@ -148,6 +148,74 @@
     .slider, .stage, .photo, .entry-body, .entry-toggle::after, .zone { transition: none; }
     .arrow, .photo { animation: none; }
   }
+  .vinyl-btn { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; }
+  .disc {
+    position: relative; display: block; width: 100%; aspect-ratio: 1; border-radius: 50%;
+    background: repeating-radial-gradient(circle at center, #101010 0 2px, #1d1d1d 2px 3px);    /* grooves */
+    box-shadow: inset 0 0 0 3px #000, 0 4px 14px rgba(0, 0, 0, .35);
+    animation: vinyl-spin 3.2s linear infinite; animation-play-state: paused;                    /* spin speed here */
+  }
+  .vinyl.is-playing .disc { animation-play-state: running; }
+  @keyframes vinyl-spin { to { transform: rotate(360deg); } }
+
+  .photo .disc-label {                    /* your PNG, cropped to the center ring */
+    position: absolute; inset: 0; margin: auto; width: 36%; height: 36%; max-height: none;
+    border-radius: 50%; object-fit: cover; background: #888;
+  }
+  .disc::after {                          /* spindle hole */
+    content: ""; position: absolute; inset: 0; margin: auto; width: 4.5%; height: 4.5%;
+    border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .5);
+  }
+  .vinyl-btn::after {                     /* fixed light reflection (does not spin) */
+    content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 25deg, transparent 0 18%, rgba(255, 255, 255, .16) 25%, transparent 32% 68%, rgba(255, 255, 255, .16) 75%, transparent 82%);
+  }
+  .vinyl-btn::before {                    /* play / pause badge */
+    content: "\25B6"; position: absolute; right: 2%; bottom: 2%; z-index: 2;
+    width: 2.1rem; height: 2.1rem; display: grid; place-items: center; border-radius: 50%;
+    background: var(--accent); color: #fff; font-size: .8rem; padding-left: 2px; box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  }
+  .vinyl.is-playing .vinyl-btn::before { content: "\275A\275A"; font-size: .65rem; padding-left: 0; letter-spacing: -1px; }
+  @media (prefers-reduced-motion: reduce) { .disc { animation: none; } }
+
+  /* ============ ERA PANEL + ERA BACKGROUND ============ */
+  /* registering these lets the colors fade smoothly when the era changes */
+  @property --bg    { syntax: '<color>'; inherits: true; initial-value: #eef1f4; }
+  @property --card  { syntax: '<color>'; inherits: true; initial-value: #ffffff; }
+  @property --ink   { syntax: '<color>'; inherits: true; initial-value: #17212b; }
+  @property --muted { syntax: '<color>'; inherits: true; initial-value: #5d6b79; }
+  @property --line  { syntax: '<color>'; inherits: true; initial-value: #c3ccd5; }
+  :root { transition: --bg .9s ease, --card .9s ease, --ink .9s ease, --muted .9s ease, --line .9s ease; }
+
+  /* the script sets --bg from the era and adds ONE of these classes, chosen by how light the color is */
+  :root.era-light {
+    --card: color-mix(in srgb, #ffffff 80%, var(--bg));
+    --ink: #17212b;
+    --muted: color-mix(in srgb, #17212b 62%, var(--bg));
+    --line: color-mix(in srgb, #17212b 18%, var(--bg));
+    --accent: #1f5eff;
+    --c1: #1f5eff; --c2: #d6336c; --c3: #0b8f6a; --c4: #c27a00; --c5: #7a3fd1; --c6: #0a8aa6;
+  }
+  :root.era-dark {
+    --card: color-mix(in srgb, #ffffff 9%, var(--bg));
+    --ink: #e8edf2;
+    --muted: color-mix(in srgb, #e8edf2 62%, var(--bg));
+    --line: color-mix(in srgb, #e8edf2 20%, var(--bg));
+    --accent: #6b94ff;
+    --c1: #6b94ff; --c2: #f06b9b; --c3: #3ccf9f; --c4: #e3a63a; --c5: #a98af0; --c6: #4cc6df;
+  }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-bottom: 12px; }
+  .controls .sortbar { margin-bottom: 0; }
+  .era-panel { display: flex; align-items: center; gap: 10px; padding: 4px 8px 4px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); }
+  .era-panel label { font-size: .85rem; color: var(--muted); }
+  .era-swatch { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line); background: var(--era-swatch, transparent); }
+  .era-select { font: inherit; font-size: .9rem; color: var(--ink); background: transparent; border: 0; padding: 4px 4px; max-width: 240px; cursor: pointer; }
+  .era-select option { background: var(--card); color: var(--ink); }
+
+  .entry.is-flash .entry-card { animation: flash 1.6s ease; }       /* brief ring on the entry you jumped to */
+  @keyframes flash { 0%, 55% { box-shadow: 0 0 0 3px var(--c); } 100% { box-shadow: 0 0 0 3px transparent; } }
+  @media (prefers-reduced-motion: reduce) { :root { transition: none; } .entry.is-flash .entry-card { animation: none; } }
 </style>
 </head>
 <body>
@@ -174,11 +242,20 @@
       <div class="timeline-wrap">
         <h2>YOUR TIMELINE TITLE</h2>
 
-        <div class="sortbar">
-          <span class="sortbar-label">Sort by</span>
-          <div class="seg" role="group" aria-label="Sort mode">
-            <button class="mode-btn" data-mode="category" aria-pressed="true" type="button">Category</button>
-            <button class="mode-btn" data-mode="tag" aria-pressed="false" type="button">Tag</button>
+        <div class="controls">
+          <div class="sortbar">
+            <span class="sortbar-label">Sort by</span>
+            <div class="seg" role="group" aria-label="Sort mode">
+              <button class="mode-btn" data-mode="category" aria-pressed="true" type="button">Category</button>
+              <button class="mode-btn" data-mode="tag" aria-pressed="false" type="button">Tag</button>
+            </div>
+          </div>
+
+          <!-- ERA JUMP: the options are built from the ERAS list at the top of the script -->
+          <div class="era-panel">
+            <span class="era-swatch" id="eraSwatch" aria-hidden="true"></span>
+            <label for="eraSelect">Jump to</label>
+            <select id="eraSelect" class="era-select"></select>
           </div>
         </div>
 
@@ -190,7 +267,9 @@
              Copy one whole <div class="entry"> ... </div> block and paste it where you want it (top = earliest).
              - data-category : the category name. Filter buttons, colors and the category label are built from it
                                automatically, so a brand-new name just works. Spell it identically across entries.
-             - entry-date    : any text (1969, Mar 2024, Spring)
+             - entry-date    : any text (1969, Mar 2024, Spring). The first 4-digit year in it decides the entry's era.
+                               Optional on the entry div: data-year="1995" (era year if the date text has none)
+                               or data-era="Early web" (force an era by name).
              - entry-toggle  : the clickable title
              - tag buttons   : one <button class="tag"> per tag; the text inside is the tag.
                                Spell tags identically everywhere; the Tag filter is built from them.
@@ -213,9 +292,9 @@
              On screens narrower than 960px the photos appear inside the open entry instead.
              ======================================================== -->
 
-        <div class="entry" data-category="History">
+        <div class="entry" data-category="Technology">
           <div class="entry-card">
-            <div class="entry-meta"><span class="entry-date">1989</span></div>
+            <div class="entry-meta"><span class="entry-date">1971</span></div>
             <button class="entry-toggle" type="button" aria-expanded="false">ARPAnet</button>
             <div class="entry-tags">
               <button class="tag" type="button">technology</button>
@@ -227,15 +306,88 @@
                 <div class="entry-text">
                   <p>In the year 1945, two things happened: World War 2 ended, and the term “Internet” was coined by the United States War Department. Although this term was originally meant to designate a network of radios, this term is now commonly used to refer to the World Wide Web, who didn’t come into existence until 1989 in the CERN (that’s us!).</p>
                   <p>
-The US department of Defense originally funded ARPANET, more bureaucratically known as the Advanced Research Projects Agency Network
+The US department of Defense originally funded ARPANET, more bureaucratically known as the Advanced Research Projects Agency Network, served as a way to link files between different departments of the US government, and was the first network to implement the TCP/IP protocol suite. The first message sent over ARPANET was “LO”, which was meant to be “LOGIN”, but the system crashed after the first two letters were sent. The first successful message sent over ARPANET was “LOGIN”.
 </p>
                 </div>
                 <div class="entry-media">
                   <figure class="photo" data-rot="-4">
-                    <img src="images/Arapnet_logical_map,_march_1977.png">
+                    <img src="./images/Arpanet_logical_map,_march_1977.png">
                     <figcaption>
-                      <span class="fig-source">Source: Author, Title, Publisher, Year (URL)</span>
-                      <span class="fig-note">Explanation of what the viewer is looking at and why it matters.</span>
+                      <span class="fig-source">Source: Wikipedia, Map of ARPAnet, March 1977 (https://en.wikipedia.org/wiki/ARPANET)</span>
+                      <span class="fig-note">Map of ARPAnet, shows every linked file in March 1977</span>
+                    </figcaption>
+                  </figure>
+                  <figure class="photo" data-rot="3" data-x="22" data-w="220">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 380'%3E%3Crect width='300' height='380' fill='%23c3ccd5'/%3E%3Ctext x='150' y='196' text-anchor='middle' font-family='Arial' font-size='20' fill='%235d6b79'%3EYOUR IMAGE%3C/text%3E%3C/svg%3E" alt="Describe the image">
+                    <figcaption>
+                      <span class="fig-source">Source: Archive name, item no. 123</span>
+                      <span class="fig-note">A second image with its own rotation, offset and width.</span>
+                    </figcaption>
+                  </figure>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+<!-- ================= ENTRY SEPERATOR =================-->
+        <div class="entry" data-category="Technology">
+          <div class="entry-card">
+            <div class="entry-meta"><span class="entry-date">1989</span></div>
+            <button class="entry-toggle" type="button" aria-expanded="false">Dial-up internet</button>
+            <div class="entry-tags">
+              <button class="tag" type="button">technology</button>
+              <button class="tag" type="button">internet</button>
+            </div>
+            <p class="entry-summary">Routing the internet through telephone lines.</p>
+            <div class="entry-body">
+              <div>
+                <div class="entry-text">
+                  <p>The Dial-up Internet connection was the first commercially available way to connect to the internet back in the early 90s all the way up to the late 2000s. Nowadays, we use somthing called broadband or fiber-optic, dial-up has been mostly left behind. </p>
+                  <p>The Way Dial-up worked and why it was ingenious is that it used the already existant telephone lines to connect regular people to the internet using audio. You'd have to buy a modem to use dial-up. The way it would work is that your computer would send data as audio through telephone lines, and a modem at some telecommunications company would demodulate that audio to reconstruct your data.</p>
+                  <p>At first, as all things early internet were, only universities really had access to dial-up internet, and students could potentially use it from their own homes using university technology. The first commercially available form of dial-up was offered by Software Tool & Die, called "The World" in 1990. AT&T and Sprint would quickly hop on this bandwagon and start offering their own access to consumers.</p> 
+                </div>
+                <div class="entry-media">
+                  <figure class="photo vinyl" data-audio="audio/dial_up.mp3" data-rot="-3">
+                    <button class="vinyl-btn" type="button" aria-label="Play: Dial up noise" aria-pressed="false">
+                      <span class="disc">
+                        <img class="disc-label" src="images/dial_up.png" alt="">
+                      </span>
+                    </button>
+                    <figcaption>
+                      <span class="fig-source">Source: Gaming Sound FX on YouTube: https://www.youtube.com/watch?v=QDS4B0mM-ew</span>
+                      <span class="fig-note">This sound is the characteristic dial-up modem connection sound. Your parents have probably heard it thousands of times.</span>
+                    </figcaption>
+                  </figure>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+<!-- ================= ENTRY SEPERATOR =================-->
+        <div class="entry" data-category="Culture">
+          <div class="entry-card">
+            <div class="entry-meta"><span class="entry-date">1992</span></div>
+            <button class="entry-toggle" type="button" aria-expanded="false">The early 90's internet</button>
+            <div class="entry-tags">
+              <button class="tag" type="button">culture</button>
+              <button class="tag" type="button">internet</button>
+              <button class="tag" type="button">philosophy</button>
+            </div>
+            <p class="entry-summary">: A crazy place at a crazy time.</p>
+            <div class="entry-body">
+              <div>
+                <div class="entry-text">
+                  <p>The early 90's internet can only be described as a sort of wild west. There weren't any real limitations or regulations on what one could do at that point and the sheer learnability of html and css made it so that anyone with access to the internet could go to GeoCities and code their own personal website.</p>
+                  <p>Usually, people would use services like GeoCities to host their websites. These websites were normally just introductory pages and a sort of proof of existance to the world of the internet, where one only had a website to show that they were there and they did their best to have a voice in the endless abyss that is the internet.</p>
+                  <p>One example i really like citing when considering the early 90's internet, is a small satirical website known as "The Church of Euthanasia", that you can still find at <a href="https://www.churchofeuthanasia.org" target="_blank" rel="noopener" >churchofeuthanasia.org</a>. This website, launched in 1995, was a satire of the rise of religion-based websites on the 90's internet. The creators of this website, based in Boston, gained notoriety because of the sheer shock value this website created. This is very good way to show how even in the early days, shock and extreme emotions is the way to get yourself any clicks. You had to be loud and different to have any sort of attention.</p>
+                </div>
+                <div class="entry-media">
+                  <figure class="photo" data-rot="-4">
+                    <img src="./images/Arpanet_logical_map,_march_1977.png">
+                    <figcaption>
+                      <span class="fig-source">Source: Wikipedia, Map of ARPAnet, March 1977 (https://en.wikipedia.org/wiki/ARPANET)</span>
+                      <span class="fig-note">Map of ARPAnet, shows every linked file in March 1977</span>
                     </figcaption>
                   </figure>
                   <figure class="photo" data-rot="3" data-x="22" data-w="220">
@@ -251,27 +403,59 @@ The US department of Defense originally funded ARPANET, more bureaucratically kn
           </div>
         </div>
 
-        <div class="entry" data-category="Science">
+<!-- ================= ENTRY SEPERATOR =================-->
+        <div class="entry" data-category="Culture">
           <div class="entry-card">
-            <div class="entry-meta"><span class="entry-date">1977</span></div>
-            <button class="entry-toggle" type="button" aria-expanded="false">Example entry two</button>
+            <div class="entry-meta"><span class="entry-date">1989</span></div>
+            <button class="entry-toggle" type="button" aria-expanded="false">LimeWire</button>
             <div class="entry-tags">
-              <button class="tag" type="button">voyager</button>
-              <button class="tag" type="button">space</button>
-              <button class="tag" type="button">firsts</button>
+              <button class="tag" type="button">technology</button>
+              <button class="tag" type="button">internet</button>
+              <button class="tag" type="button">philosophy</button>
+
             </div>
-            <p class="entry-summary">Another short summary.</p>
+            <p class="entry-summary">A file sharing service, and a pirate's dream.</p>
             <div class="entry-body">
               <div>
                 <div class="entry-text">
-                  <p>Long text for entry two.</p>
+                  <p>Limewire, launched in 2000, was a peer-to-peer file sharing network. Peer-to-peer meaning that users would share files directly with each other, instead of using precious server space and bandwidth. This file sharing platform let users share music, video and images for free, if you had an internet connection. This got them into a lot of controversy, because piracy very soon became an issue for major distributors of music specifically, since any and all albums would be ripped and placed into Limewire.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+<!-- ================= ENTRY SEPERATOR =================-->
+        <div class="entry" data-category="Technology">
+          <div class="entry-card">
+            <div class="entry-meta"><span class="entry-date">1989</span></div>
+            <button class="entry-toggle" type="button" aria-expanded="false">ARPAnet</button>
+            <div class="entry-tags">
+              <button class="tag" type="button">technology</button>
+              <button class="tag" type="button">internet</button>
+            </div>
+            <p class="entry-summary">ARPAnet, the origin of the internet as a military tool.</p>
+            <div class="entry-body">
+              <div>
+                <div class="entry-text">
+                  <p>In the year 1945, two things happened: World War 2 ended, and the term “Internet” was coined by the United States War Department. Although this term was originally meant to designate a network of radios, this term is now commonly used to refer to the World Wide Web, who didn’t come into existence until 1989 in the CERN (that’s us!).</p>
+                  <p>
+The US department of Defense originally funded ARPANET, more bureaucratically known as the Advanced Research Projects Agency Network, served as a way to link files between different departments of the US government, and was the first network to implement the TCP/IP protocol suite. The first message sent over ARPANET was “LO”, which was meant to be “LOGIN”, but the system crashed after the first two letters were sent. The first successful message sent over ARPANET was “LOGIN”.
+</p>
                 </div>
                 <div class="entry-media">
-                  <figure class="photo" data-rot="2">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 260'%3E%3Crect width='400' height='260' fill='%23c3ccd5'/%3E%3Ctext x='200' y='136' text-anchor='middle' font-family='Arial' font-size='20' fill='%235d6b79'%3EYOUR IMAGE%3C/text%3E%3C/svg%3E" alt="Describe the image">
+                  <figure class="photo" data-rot="-4">
+                    <img src="./images/Arpanet_logical_map,_march_1977.png">
                     <figcaption>
-                      <span class="fig-source">Source: Author, Title, Publisher, Year</span>
-                      <span class="fig-note">Explanation of the image.</span>
+                      <span class="fig-source">Source: Wikipedia, Map of ARPAnet, March 1977 (https://en.wikipedia.org/wiki/ARPANET)</span>
+                      <span class="fig-note">Map of ARPAnet, shows every linked file in March 1977</span>
+                    </figcaption>
+                  </figure>
+                  <figure class="photo" data-rot="3" data-x="22" data-w="220">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 380'%3E%3Crect width='300' height='380' fill='%23c3ccd5'/%3E%3Ctext x='150' y='196' text-anchor='middle' font-family='Arial' font-size='20' fill='%235d6b79'%3EYOUR IMAGE%3C/text%3E%3C/svg%3E" alt="Describe the image">
+                    <figcaption>
+                      <span class="fig-source">Source: Archive name, item no. 123</span>
+                      <span class="fig-note">A second image with its own rotation, offset and width.</span>
                     </figcaption>
                   </figure>
                 </div>
@@ -280,6 +464,7 @@ The US department of Defense originally funded ARPANET, more bureaucratically kn
           </div>
         </div>
 
+<!-- ================= ENTRY SEPERATOR =================-->
         <div class="entry" data-category="History">
           <div class="entry-card">
             <div class="entry-meta"><span class="entry-date">1990</span></div>
@@ -314,6 +499,19 @@ The US department of Defense originally funded ARPANET, more bureaucratically kn
   const HOVER_DELAY = 250;     // ms the pointer must rest on a zone before it triggers
   const COOLDOWN = 900;        // ms before another switch is allowed
 
+  /* ================= ERAS =================
+     Each era: a name, a year range (inclusive), and a page background color (#hex).
+     An entry belongs to the era that contains its year. Page text and cards switch between light and dark
+     automatically to stay readable; add  dark: true  or  dark: false  to an era to force it.
+     Keep ranges from overlapping. Eras with no entries show as disabled in the dropdown. */
+  const ERAS = [
+    { name: 'Humble Beginnings',    from: 1940, to: 1989, bg: '#d6e0ea' },
+    { name: 'The Silver Age',  from: 1990, to: 1999, bg: '#c7e6e0' },
+    { name: 'The Golden Age',    from: 2000, to: 2009, bg: '#f3d9bf' },
+    { name: 'The YouTube Era', from: 2010, to: 2022, bg: '#e2d3f1' },
+    { name: 'The Tiktok Age',        from: 2023, to: 2029, bg: '#18202e' }
+  ];
+
   const $ = s => document.querySelector(s);
   const slug = s => s.trim().toLowerCase().replace(/\s+/g, '-');
 
@@ -327,6 +525,8 @@ The US department of Defense originally funded ARPANET, more bureaucratically kn
     $('#viewport').classList.toggle('is-timeline', tl);
     timelinePanel.inert = !tl; introPanel.inert = tl;
     zoneBottom.inert = tl;     zoneTop.inert = !tl;
+    if (tl) spy();      // pick the era for wherever the timeline is scrolled
+    paintEra();         // era background shows only on the timeline, never on the intro
   }
   [[zoneBottom, 'timeline'], [zoneTop, 'intro']].forEach(([z, view]) => {
     let t;
@@ -392,7 +592,8 @@ The US department of Defense originally funded ARPANET, more bureaucratically kn
     items.forEach(i => { if (i.node !== node) setOpen(i.node, false); });   // one open entry at a time
     setOpen(node, willOpen);
     syncGallery();
-    if (willOpen) setTimeout(() => node.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' }), 350);
+    if (willOpen) { const it = items.find(i => i.node === node); if (it && it.era >= 0) { pinned = true; setEra(it.era); } }   // background follows the opened entry
+    if (willOpen) setTimeout(() => scrollPanelTo(node, 'nearest'), 350);
   }
 
   const matches = i => !selected || (mode === 'category' ? i.category === selected : i.tags.some(t => t.slug === selected));
@@ -420,6 +621,7 @@ The US department of Defense originally funded ARPANET, more bureaucratically kn
     emptyMsg.classList.toggle('is-visible', shown === 0);
     const o = tl.querySelector('.entry.is-open');
     if (o && o.classList.contains('is-hidden')) { setOpen(o, false); syncGallery(); }   // a filtered-out entry can't stay open
+    spy();
   }
 
   function setMode(m, value = null) { mode = m; selected = value; renderFilters(); applyFilters(); }
@@ -438,6 +640,121 @@ The US department of Defense originally funded ARPANET, more bureaucratically kn
     if (h) toggleEntry(h.closest('.entry'));
   });
   tagBox.addEventListener('click', () => { selected = null; applyFilters(); });
+  /* ================= eras: jump-to dropdown, scroll tracking, background color ================= */
+  const eraSelect = $('#eraSelect'), eraSwatch = $('#eraSwatch');
+  let currentEra = -1;            // index into ERAS of the era being viewed (-1 = none)
+  let pinned = false;             // true after a jump / opening an entry, until the reader scrolls by hand
+
+  const yearOf = node => {
+    const m = (node.dataset.year || (node.querySelector('.entry-date') || {}).textContent || '').match(/\d{4}/);
+    return m ? +m[0] : null;
+  };
+  const eraIndexOf = node => {
+    if (node.dataset.era) { const k = ERAS.findIndex(e => e.name.toLowerCase() === node.dataset.era.trim().toLowerCase()); if (k >= 0) return k; }
+    const y = yearOf(node);
+    return y == null ? -1 : ERAS.findIndex(e => y >= e.from && y <= e.to);
+  };
+  items.forEach(i => { i.era = eraIndexOf(i.node); });
+
+  eraSelect.replaceChildren(new Option('Choose an era…', ''), ...ERAS.map((e, k) => {
+    const n = items.filter(i => i.era === k).length;
+    const o = new Option(`${e.name} (${e.from}\u2013${e.to})${n ? '' : ' \u2013 no entries'}`, k);
+    o.disabled = n === 0; return o;
+  }));
+
+  // light or dark text for a #hex background (WCAG relative luminance)
+  function isDark(hex) {
+    let h = hex.replace('#', ''); if (h.length === 3) h = [...h].map(c => c + c).join('');
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.179;
+  }
+
+  function paintEra() {
+    const root = document.documentElement;
+    const era = (document.body.classList.contains('is-timeline') && currentEra >= 0) ? ERAS[currentEra] : null;
+    const dark = era ? (era.dark !== undefined ? era.dark : isDark(era.bg)) : false;
+    root.classList.toggle('era-light', !!era && !dark);
+    root.classList.toggle('era-dark', !!era && dark);
+    if (era) root.style.setProperty('--bg', era.bg); else root.style.removeProperty('--bg');
+    eraSelect.value = currentEra >= 0 ? String(currentEra) : '';
+    eraSwatch.style.setProperty('--era-swatch', currentEra >= 0 ? ERAS[currentEra].bg : 'transparent');
+  }
+  function setEra(k) { if (k === currentEra) return; currentEra = k; paintEra(); }
+
+  // era of whatever is at the top of the timeline as you scroll
+  function spy() {
+    if (pinned) return;
+    const vis = items.filter(i => !i.node.classList.contains('is-hidden') && i.era >= 0);
+    if (!vis.length) return;
+    const scrollable = timelinePanel.scrollHeight > timelinePanel.clientHeight + 4;
+    const atBottom = timelinePanel.scrollTop + timelinePanel.clientHeight >= timelinePanel.scrollHeight - 4;
+    let pick = vis[0];
+    if (scrollable && atBottom) pick = vis[vis.length - 1];
+    else {
+      const line = timelinePanel.getBoundingClientRect().top + 160;
+      for (const i of vis) { if (i.node.getBoundingClientRect().top <= line) pick = i; else break; }
+    }
+    setEra(pick.era);
+  }
+  let spyQueued = false;
+  timelinePanel.addEventListener('scroll', () => { if (spyQueued) return; spyQueued = true; requestAnimationFrame(() => { spyQueued = false; spy(); }); }, { passive: true });
+  ['wheel', 'touchmove', 'keydown'].forEach(ev => timelinePanel.addEventListener(ev, () => { pinned = false; }, { passive: true }));
+  timelinePanel.addEventListener('pointerdown', e => { if (e.target === timelinePanel) pinned = false; });   // dragging the scrollbar
+
+  // scroll ONLY the timeline panel (scrollIntoView would also push the outer sliding viewport out of place)
+  function scrollPanelTo(node, align) {
+    const pr = timelinePanel.getBoundingClientRect(), r = node.getBoundingClientRect();
+    const top = r.top - pr.top, bottom = r.bottom - pr.top, margin = 84, room = timelinePanel.clientHeight - 20;
+    let delta = 0;
+    if (align === 'start') delta = top - margin;
+    else if (top < margin) delta = top - margin;
+    else if (bottom > room) delta = Math.min(bottom - room, top - margin);
+    if (delta) timelinePanel.scrollTo({ top: timelinePanel.scrollTop + delta, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  // the dropdown: scroll to the first entry of the chosen era
+  eraSelect.addEventListener('change', () => {
+    const k = eraSelect.value === '' ? -1 : +eraSelect.value;
+    if (k < 0) { paintEra(); return; }
+    let target = items.find(i => i.era === k && !i.node.classList.contains('is-hidden'));
+    if (!target) { setMode(mode); target = items.find(i => i.era === k); }     // a filter was hiding that era: clear the filter
+    if (!target) return;
+    pinned = true; setEra(k);
+    scrollPanelTo(target.node, 'start');
+    target.node.classList.remove('is-flash'); void target.node.offsetWidth; target.node.classList.add('is-flash');
+  });
+
+  (() => {
+    const audio = new Audio(); audio.preload = 'none';
+    const abs = s => new URL(s, document.baseURI).href;
+
+    const refresh = () => document.querySelectorAll('.vinyl').forEach(v => {
+      const on = !audio.paused && abs(v.dataset.audio) === audio.src;
+      v.classList.toggle('is-playing', on);
+      v.querySelector('.vinyl-btn').setAttribute('aria-pressed', on);
+    });
+    ['play', 'pause', 'ended', 'error'].forEach(ev => audio.addEventListener(ev, refresh));
+
+    // click works on the gallery copies too (delegated, so re-cloning never breaks it)
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.vinyl-btn'); if (!btn) return;
+      const src = abs(btn.closest('.vinyl').dataset.audio);
+      if (audio.src === src) { audio.paused ? audio.play().catch(refresh) : audio.pause(); }
+      else { audio.src = src; audio.play().catch(refresh); }
+    });
+
+    // stop the music when its record is no longer on screen
+    const stopIfGone = () => {
+      if (audio.paused || !audio.src) return;
+      const here = [...document.querySelectorAll('#gallery .vinyl, .entry.is-open .vinyl')].some(v => abs(v.dataset.audio) === audio.src);
+      if (!here) audio.pause();
+      refresh();
+    };
+    new MutationObserver(m => { if (m.some(x => !x.target.classList || !x.target.classList.contains('vinyl'))) { stopIfGone(); refresh(); } })
+      .observe(document.getElementById('stage'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(() => { if (!document.body.classList.contains('is-timeline')) audio.pause(); })
+      .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  })();
 
   setMode('category');
 </script>
