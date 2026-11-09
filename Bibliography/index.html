@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bibliography</title>
+<style>
+  :root { --bg: #eef1f4; --card: #ffffff; --ink: #17212b; --muted: #5d6b79; --line: #c3ccd5; --accent: #1f5eff;
+          --font: "Helvetica Neue", Arial, system-ui, sans-serif; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12171d; --card: #1b232c; --ink: #e8edf2; --muted: #94a3b2; --line: #33404d; --accent: #6b94ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.6; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 90px; }
+  .back { display: inline-block; margin-bottom: 28px; color: var(--accent); text-decoration: none; font-size: .95rem; }
+  .back:hover { text-decoration: underline; }
+  h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.02em; line-height: 1.1; }
+  .intro { margin: 0 0 36px; color: var(--muted); max-width: 62ch; }
+  h2 { margin: 36px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--line); font-size: 1.1rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  ul { list-style: none; margin: 0; padding: 0; }
+  .cite { margin: 0 0 14px; padding-left: 2em; text-indent: -2em; }       /* hanging indent, the standard citation look */
+  a { color: var(--accent); text-underline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../">&larr; Back to the timeline</a>
+
+  <h1>Bibliography</h1>
+  <p class="intro">One or two sentences on your sources and how they're organized.</p>
+
+  <!-- ===== HOW TO ADD A SOURCE =====
+       Copy one <li class="cite"> line, paste it under the right heading, and edit it.
+       Keep each heading's list in alphabetical order by the author's last name.
+       Copy a whole <h2> + <ul> block to add a new section (Articles, Websites, Interviews...). -->
+
+  <h2>Books</h2>
+  <ul>
+    <li class="cite">Lastname, Firstname. <em>Title of the Book</em>. City: Publisher, Year.</li>
+    <li class="cite">Lastname, Firstname. <em>Another Book</em>. City: Publisher, Year.</li>
+  </ul>
+
+  <h2>Articles</h2>
+  <ul>
+    <li class="cite">Lastname, Firstname. "Title of the Article." <em>Journal Name</em> 12, no. 3 (Year): 45&ndash;67.
+      <a href="https://example.com" target="_blank" rel="noopener">example.com</a></li>
+  </ul>
+
+  <h2>Websites and media</h2>
+  <ul>
+    <li class="cite">Wikimedia org. "Wikipedia" ARPANET. Accessed October 27 2026.
+      <a href="https://example.com" target="_blank" rel="noopener">Wikipedia.org/</a></li>
+  </ul>
+</main>
+</body>
+</html>
