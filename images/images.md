@@ -1,2 +1,4 @@
  - Arpanet_logical_map,_march_1977.png comes from wikipedia at: https://en.wikipedia.org/wiki/ARPANET
- - 
+ - Duckroll_meme.png comes from https://meme.fandom.com/wiki/Duckroll
+ - 4chan_home.png is a screenshot that i took of https://4chan.org
+ - i made dial_up.png with kolourpaint, a free open-source paint app on KDE.
